@@ -2,16 +2,17 @@ package com.thenewboston.api.bankapi.datasource
 
 import com.thenewboston.common.http.NetworkClient
 import com.thenewboston.common.http.Outcome
-import com.thenewboston.common.http.config.BankConfig
 import com.thenewboston.common.http.makeApiCall
 import com.thenewboston.data.dto.bankapi.accountdto.AccountList
-import com.thenewboston.data.dto.bankapi.bankdto.BankList
+import com.thenewboston.data.dto.bankapi.bankdto.request.BankTrustRequest
+import com.thenewboston.data.dto.bankapi.bankdto.response.BankList
+import com.thenewboston.data.dto.bankapi.bankdto.response.BankTrustResponse
 import com.thenewboston.data.dto.bankapi.banktransactiondto.BankTransactionList
 import com.thenewboston.data.dto.bankapi.banktransactiondto.BlockList
 import com.thenewboston.data.dto.bankapi.configdto.BankDetails
 import com.thenewboston.data.dto.bankapi.validatordto.Validator
 import com.thenewboston.data.dto.bankapi.validatordto.ValidatorList
-import com.thenewboston.utils.Endpoints
+import com.thenewboston.utils.BankAPIEndpoints
 import io.ktor.client.request.*
 import io.ktor.util.*
 import io.ktor.utils.io.errors.*
@@ -26,7 +27,7 @@ class BankDataSource @Inject constructor(private val networkClient: NetworkClien
     )
 
     private suspend fun banks(): Outcome<BankList> {
-        val result = networkClient.defaultClient.get<BankList>(Endpoints.BANKS_ENDPOINT)
+        val result = networkClient.defaultClient.get<BankList>(BankAPIEndpoints.BANKS_ENDPOINT)
 
         return when {
             result.banks.isNullOrEmpty() -> Outcome.Error("Error fetching banks", IOException())
@@ -34,16 +35,13 @@ class BankDataSource @Inject constructor(private val networkClient: NetworkClien
         }
     }
 
-    suspend fun fetchBankDetails(bankConfig: BankConfig) = makeApiCall(
-        call = { bankDetail(bankConfig) },
+    suspend fun fetchBankDetails() = makeApiCall(
+        call = { bankDetail() },
         errorMessage = "Failed to retrieve bank details"
     )
 
-    private suspend fun bankDetail(bankConfig: BankConfig): Outcome<BankDetails> {
-        val result = networkClient.newClient(
-            ipAddress = bankConfig.ipAddress,
-            port = bankConfig.port
-        ).get<BankDetails>(Endpoints.CONFIG_ENDPOINT)
+    private suspend fun bankDetail(): Outcome<BankDetails> {
+        val result = networkClient.defaultClient.get<BankDetails>(BankAPIEndpoints.CONFIG_ENDPOINT)
 
         return Outcome.Success(result)
     }
@@ -54,7 +52,7 @@ class BankDataSource @Inject constructor(private val networkClient: NetworkClien
     )
 
     private suspend fun bankTransactions(): Outcome<BankTransactionList> {
-        val endpoint = Endpoints.BANK_TRANSACTIONS_ENDPOINT
+        val endpoint = BankAPIEndpoints.BANK_TRANSACTIONS_ENDPOINT
         val result = networkClient.defaultClient.get<BankTransactionList>(endpoint)
 
         return when {
@@ -70,7 +68,7 @@ class BankDataSource @Inject constructor(private val networkClient: NetworkClien
     )
 
     private suspend fun doFetchValidators(): Outcome<ValidatorList> {
-        val endpoint = Endpoints.VALIDATORS_ENDPOINT
+        val endpoint = BankAPIEndpoints.VALIDATORS_ENDPOINT
         val validators = networkClient.defaultClient.get<ValidatorList>(endpoint)
 
         return when {
@@ -85,7 +83,7 @@ class BankDataSource @Inject constructor(private val networkClient: NetworkClien
     )
 
     private suspend fun doFetchValidator(nodeIdentifier: String): Outcome<Validator> {
-        val validatorsEndpoint = Endpoints.VALIDATORS_ENDPOINT
+        val validatorsEndpoint = BankAPIEndpoints.VALIDATORS_ENDPOINT
         val urlSuffix = "$validatorsEndpoint/$nodeIdentifier"
         val validator = networkClient.defaultClient.get<Validator>(urlSuffix)
 
@@ -98,7 +96,8 @@ class BankDataSource @Inject constructor(private val networkClient: NetworkClien
     )
 
     private suspend fun accounts(): Outcome<AccountList> {
-        val accounts = networkClient.defaultClient.get<AccountList>(Endpoints.ACCOUNTS_ENDPOINT)
+        val urlString = BankAPIEndpoints.ACCOUNTS_ENDPOINT
+        val accounts = networkClient.defaultClient.get<AccountList>(urlString)
 
         return when {
             accounts.results.isNullOrEmpty() -> Outcome.Error(
@@ -115,7 +114,7 @@ class BankDataSource @Inject constructor(private val networkClient: NetworkClien
     )
 
     private suspend fun blocks(): Outcome<BlockList> {
-        val blocks = networkClient.defaultClient.get<BlockList>(Endpoints.BLOCKS_ENDPOINT)
+        val blocks = networkClient.defaultClient.get<BlockList>(BankAPIEndpoints.BLOCKS_ENDPOINT)
 
         return when {
             blocks.results.isNullOrEmpty() -> Outcome.Error(
@@ -123,6 +122,31 @@ class BankDataSource @Inject constructor(private val networkClient: NetworkClien
                 IOException()
             )
             else -> Outcome.Success(blocks)
+        }
+    }
+
+    suspend fun sendBankTrust(request: BankTrustRequest) = makeApiCall(
+        call = { doBankTrust(request) },
+        errorMessage = "Could not send bank trust for ${request.nodeIdentifier}"
+    )
+
+    private suspend fun doBankTrust(request: BankTrustRequest): Outcome<BankTrustResponse> {
+        val url = "${BankAPIEndpoints.BANKS_ENDPOINT}/${request.nodeIdentifier}"
+
+        val response = networkClient.defaultClient.patch<BankTrustResponse> {
+            url(url)
+            body = request
+        }
+
+        return when {
+            response.accountNumber.isBlank() -> {
+                val message = "Received invalid request when updating trust level of bank with" +
+                    " ${request.nodeIdentifier}"
+                Outcome.Error(message, IOException())
+            }
+            else -> {
+                Outcome.Success(response)
+            }
         }
     }
 }
