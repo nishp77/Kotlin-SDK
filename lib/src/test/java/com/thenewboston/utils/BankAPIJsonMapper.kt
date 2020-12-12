@@ -15,10 +15,15 @@ object BankAPIJsonMapper {
     const val ACCOUNTS_ENDPOINT = "accounts"
     const val BANK_TRANSACTIONS_ENDPOINT = "bank_transactions"
     const val BLOCKS_ENDPOINT = "blocks"
+    const val INVALID_BLOCKS_ENDPOINT = "invalid_blocks"
 
     fun mapBanksToJson(): String = Json.encodeToString(Mocks.banks())
 
     fun mapAccountsToJson(): String = Json.encodeToString(Mocks.accounts())
+
+    fun mapAccountToJson(trust: Double): String = Json.encodeToString(Mocks.account(trust))
+
+    fun mapEmptyAccountToJson(): String = Json.encodeToString(Mocks.emptyAccount())
 
     fun mapBlocksToJson(): String = Json.encodeToString(Mocks.blocks())
 
@@ -32,7 +37,9 @@ object BankAPIJsonMapper {
 
     fun mapInternalServerErrorToJson(): String = Json.encodeToString(Mocks.internalServerError())
 
-    fun mapBankTrustResponseToJson(): String = Json.encodeToString(Mocks.bankTrustResponse())
+    fun mapBankTrustResponseToJson(trust: Double): String = Json.encodeToString(Mocks.bankTrustResponse(trust))
 
     fun mapInvalidBankTrustResponseToJson(): String = Json.encodeToString(Mocks.emptyBankTrustResponse())
+
+    fun mapInvalidBlocksToJson(): String = Json.encodeToString(Mocks.invalidBlocks())
 }
