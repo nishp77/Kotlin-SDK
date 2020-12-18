@@ -14,8 +14,8 @@ import io.kotest.matchers.shouldNot
 import io.kotest.matchers.string.beEmpty
 import io.kotest.matchers.string.contain
 import io.kotest.matchers.types.beInstanceOf
-import io.ktor.util.*
-import io.ktor.utils.io.errors.*
+import io.ktor.util.KtorExperimentalAPI
+import io.ktor.utils.io.errors.IOException
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK

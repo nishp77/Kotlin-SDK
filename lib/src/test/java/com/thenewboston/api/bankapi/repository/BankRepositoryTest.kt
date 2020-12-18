@@ -225,6 +225,7 @@ class BankRepositoryTest {
     }
 
     @Test
+<<<<<<< HEAD
     fun `verify list of blocks is error outcome`() = runBlockingTest {
         coEvery { bankDataSource.fetchBlocks() } returns Outcome.Error("", IOException())
 
@@ -233,10 +234,62 @@ class BankRepositoryTest {
 
         // then
         coVerify { bankDataSource.fetchBlocks() }
+=======
+    fun `verify update account trust returns success outcome`() = runBlockingTest {
+        // given
+        val accountNumber = Some.accountNumber
+        val request = Mocks.trustRequest()
+        val response = Mocks.account(42.0)
+        coEvery {
+            bankDataSource.updateAccountTrust(
+                accountNumber,
+                request
+            )
+        } returns Outcome.Success(response)
+
+        // when
+        val result = repository.updateAccountTrust(accountNumber, request)
+
+        // then
+        coVerify { bankDataSource.updateAccountTrust(accountNumber, request) }
+        result should beInstanceOf<Outcome.Success<Account>>()
+    }
+
+    @Test
+    fun `verify update account trust returns error outcome`() = runBlockingTest {
+        // given
+        val accountNumber = Some.accountNumber
+        val trustRequest = Mocks.trustRequest()
+        coEvery {
+            bankDataSource.updateAccountTrust(
+                accountNumber,
+                trustRequest
+            )
+        } returns Outcome.Error("Failed to send bank trust", IOException())
+
+        // when
+        val result = repository.updateAccountTrust(accountNumber, trustRequest)
+
+        // then
+        coVerify { bankDataSource.updateAccountTrust(accountNumber, trustRequest) }
         result should beInstanceOf<Outcome.Error>()
     }
 
     @Test
+    fun `verify list of invalid blocks is error outcome`() = runBlockingTest {
+        coEvery { bankDataSource.fetchInvalidBlocks() } returns Outcome.Error("", IOException())
+
+        // when
+        val result = repository.invalidBlocks()
+
+        // then
+        coVerify { bankDataSource.fetchInvalidBlocks() }
+>>>>>>> upstream/master
+        result should beInstanceOf<Outcome.Error>()
+    }
+
+    @Test
+<<<<<<< HEAD
     fun `verify list of blocks is success outcome`() = runBlockingTest {
         coEvery { bankDataSource.fetchBlocks() } returns Outcome.Success(Mocks.blocks())
 
@@ -245,6 +298,17 @@ class BankRepositoryTest {
 
         // then
         coVerify { bankDataSource.fetchBlocks() }
+=======
+    fun `verify list of invalid blocks is success outcome`() = runBlockingTest {
+        coEvery { bankDataSource.fetchInvalidBlocks() } returns Outcome
+            .Success(Mocks.invalidBlocks())
+
+        // when
+        val result = repository.invalidBlocks()
+
+        // then
+        coVerify { bankDataSource.fetchInvalidBlocks() }
+>>>>>>> upstream/master
         result should beInstanceOf<Outcome.Success<*>>()
     }
 
